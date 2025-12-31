@@ -20,14 +20,14 @@ with open(csvDir + "EXP03_LF_360Loc.csv", 'a', newline='') as file:
     writer = csv.writer(file)
     #writer.writerow(build_header_results_csv(["Preprocess Method", "LF Method"]))
 
-    features = ["GRAYSCALE", "MAGNITUDE", "ANGLE", "HUE"]
+    features = ["RGB", "GRAYSCALE", "MAGNITUDE", "ANGLE", "HUE"]
     lf = "concat"
     savedModelsDir = f"{PARAMS.saved_models_path}/EXP03_360Loc/"
 
     models = []
     for feature in features:
-        #state_dict_path = None
-        state_dict_path = f"{savedModelsDir}{feature}/net.pth"
+        state_dict_path = None
+        #state_dict_path = f"{savedModelsDir}{feature}/net.pth"
         net_feature = load_model(model=PARAMS.model, backbone=PARAMS.backbone, embedding_size=PARAMS.embedding_size, 
                                  state_dict_path=state_dict_path, device=device)
         net_feature.eval()
@@ -44,7 +44,7 @@ with open(csvDir + "EXP03_LF_360Loc.csv", 'a', newline='') as file:
             condIlum = condIlum_360loc[envs_360loc.index(env)]
             trainSeq = trainSeq_360loc[envs_360loc.index(env)]
 
-            vmDataset = datasets_360loc.Database_LF_multifeatures(env=env, features=features, enc="vitl", tf=tf, il=trainSeq)
+            vmDataset = datasets_360loc.Database_multifeatures(env=env, features=features, enc="vitl", tf=tf, il=trainSeq)
             vmDataloader = DataLoader(vmDataset, shuffle=False, num_workers=0, batch_size=1)
 
             print(f"\nTest Environment: {env}\n")
@@ -55,10 +55,10 @@ with open(csvDir + "EXP03_LF_360Loc.csv", 'a', newline='') as file:
                 print(f"Test {ilum}")
                 idxIlum = condIlum.index(ilum)
 
-                testDataset = datasets_360loc.Test_LF_multifeatures(il=ilum, env=env, features=features, enc="vitl", tf=tf)
+                testDataset = datasets_360loc.Test_multifeatures(il=ilum, env=env, features=features, enc="vitl", tf=tf)
                 testDataloader = DataLoader(testDataset, num_workers=0, batch_size=1, shuffle=False)
                 
-                pkl_path = f"PKL_FILES/LF_Multifeatures/{features}_{lf}/{env}_{ilum}.pkl"
+                pkl_path = f"PKL_FILES/LF_Multifeatures/{"_".join(features)}_{lf}/{env}_{ilum}.pkl"
                 if not os.path.exists(pkl_path) or PARAMS.override == True:
                     create_path(os.path.dirname(pkl_path))
                     get_predictions(pkl_path=pkl_path, model=models, testDataloader=testDataloader, 

@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 import os
 import csv
 import datasets_cold
-from functions.models import load_model
+from functions.models import load_model_ef
 from functions.misc_functions import create_path, select_device
 from functions.cold import get_cond_ilum, build_row_results_csv, build_header_results_csv, envs_COLD
 from functions.eval_functions import get_avg_results_env_cold, get_glob_results_cold, compute_recalls_from_pkl
@@ -16,32 +16,39 @@ csvDir = create_path(f"{PARAMS.csv_path}Results/")
 tf = select_tf(model=PARAMS.model)
 
 
-with open(csvDir + "EXP01_DepthPreprocessingCOLD.csv", 'a', newline='') as file:
+with open(csvDir + "/EXP02_EF_COLD.csv", 'w', newline='') as file:
     writer = csv.writer(file)
-    #writer.writerow(build_header_results_csv(["Model","Backbone", "Desc.size", "Trained", "Modality"]))
+    #writer.writerow(build_header_results_csv(["EF Method", "Features", "Train"]))
 
-    input_types = ["RGB", "GRAYSCALE", "HUE", "MAGNITUDE", "ANGLE"]
-    
+    featuresList = [
+        ["RGB", "GRAYSCALE"],
+        ["RGB", "MAGNITUDE"],
+        ["RGB", "ANGLE"],
+        ["RGB", "HUE"],
+        ["RGB", "GRAYSCALE", "MAGNITUDE"],
+        ["RGB", "GRAYSCALE", "MAGNITUDE", "ANGLE"],
+        ["RGB", "GRAYSCALE", "MAGNITUDE", "ANGLE", "HUE"]
+    ]
+    savedModelsDir = f"{PARAMS.saved_models_path}/EXP02_COLD/"
 
-    for input_type in input_types:
+    for features in featuresList:
 
-        print(f"Image modality: {input_type}\n")
+        print(f"Early fusion, Features: {features}\n")
         state_dict_path = None
-        #state_dict_path = f"{PARAMS.saved_models_path}EXP03_COLD/{input_type}/net.pth"
-        net = load_model(model=PARAMS.model, backbone=PARAMS.backbone, embedding_size=PARAMS.embedding_size, 
-                         state_dict_path=state_dict_path, device=device)
+        #state_dict_path = f"{savedModelsDir}{method}/net.pth"
+        net = load_model_ef(pretrained_model=PARAMS.model, num_channels=2+len(features), weightDir=state_dict_path).to(device)
         net.eval()
 
-        rowCSV = [PARAMS.model, PARAMS.backbone, PARAMS.embedding_size, "Yes" if state_dict_path is None else "Yes", input_type]
+        rowCSV = [features, "", "Yes"]
         recall_at_1, recall_at_n = [], []
 
         with torch.no_grad():
-
+    
             for env in envs_COLD:
 
                 condIlum = get_cond_ilum(env)
 
-                vmDataset = datasets_cold.Database_wo_Fusion(env=env, input_type=input_type, tf=tf, enc=PARAMS.enc)
+                vmDataset = datasets_cold.Database_multifeatures(env=env, features=features, tf=tf)
                 vmDataloader = DataLoader(vmDataset, shuffle=False, num_workers=0, batch_size=1)
 
                 print(f"Test Environment: {env}\n")
@@ -49,18 +56,17 @@ with open(csvDir + "EXP01_DepthPreprocessingCOLD.csv", 'a', newline='') as file:
                 descriptorsVM, coordsVM, treeCoords = build_vm(model=net,  dataloader=vmDataloader)
 
                 for ilum in condIlum:
-                    print(f"Test {ilum}")
                     idxIlum = condIlum.index(ilum)
 
-                    testDataset = datasets_cold.Test_wo_Fusion(il=ilum, env=env, input_type=input_type, tf=tf, enc=PARAMS.enc)
+                    testDataset = datasets_cold.Test_multifeatures(il=ilum, env=env, features=features, tf=tf)
                     testDataloader = DataLoader(testDataset, num_workers=0, batch_size=1, shuffle=False)
 
-                    pkl_path = f"PKL_FILES/no_fusion/{input_type}/{env}_{ilum}.pkl"
+                    pkl_path = f"PKL_FILES/EF/{'_'.join(features)}/{env}_{ilum}.pkl"
                     if not os.path.exists(pkl_path) or PARAMS.override == True:
                         create_path(os.path.dirname(pkl_path))
-                        get_predictions(pkl_path=pkl_path, model=net, testDataloader=testDataloader, descriptorsVM=descriptorsVM,
-                                        treeCoords=treeCoords, coordsVM= coordsVM, env=env, lf_method=None, device=device)
-
+                        get_predictions(pkl_path=pkl_path, model=net, testDataloader=testDataloader, 
+                                        descriptorsVM=descriptorsVM,
+                                        treeCoords=treeCoords, coordsVM= coordsVM, env=env, device=device)
                     r1, rn = compute_recalls_from_pkl(pkl_path=pkl_path)
                     recall_at_1.append(r1)
                     recall_at_n.append(rn)

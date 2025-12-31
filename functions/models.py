@@ -66,9 +66,13 @@ def load_model_ef(pretrained_model, num_channels=3, weightDir=None, device="cuda
             if num_channels == 4:
                 state_dict['backbone.0.weight'] = torch.cat((weights_conv1, weights_conv1.mean(dim=1, keepdim=True)), dim=1)
                 #state_dict['backbone.0.weight'] = torch.cat((weights_conv1, torch.zeros((64, 1, 3, 3))), dim=1)
- 
+            elif num_channels == 5:
+                state_dict['backbone.0.weight'] = torch.cat((weights_conv1, weights_conv1.mean(dim=1, keepdim=True), weights_conv1.mean(dim=1, keepdim=True)), dim=1)
+                #state_dict['backbone.0.weight'] = torch.cat((weights_conv1, weights_conv1, torch.zeros((64, 1, 3, 3))), dim=1)
             elif num_channels == 6:
                 state_dict['backbone.0.weight'] = torch.cat((weights_conv1, weights_conv1), dim=1)
+            elif num_channels == 7:
+                state_dict['backbone.0.weight'] = torch.cat((weights_conv1, weights_conv1, weights_conv1.mean(dim=1, keepdim=True)), dim=1)
                 #state_dict['backbone.0.weight'] = torch.cat((weights_conv1, torch.zeros_like(weights_conv1)), dim=1)
             if weightDir is not None:
                 print(f"Loading weights from {weightDir}")

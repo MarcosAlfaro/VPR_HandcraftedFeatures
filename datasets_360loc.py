@@ -20,7 +20,7 @@ dataset_dir = f"{PARAMS._360loc_path}"
 def process_image(image, rgb=True, eq=True, inv=True, sh=True, color_rep=None, tf=transforms.ToTensor()):
     save_img = False
     if "/atrium" in image and "0200" in image and "daytime_360_0" in image:
-        save_img = True
+        save_img = False
         feature = image.split("/")[-2]
     image = img_proc.load_image(image, rgb=rgb)    
     if save_img:
@@ -33,10 +33,11 @@ def process_image(image, rgb=True, eq=True, inv=True, sh=True, color_rep=None, t
         image = img_proc.apply_colormap(image, color_rep) if color_rep is not None else image
         if save_img:
             img = Image.fromarray(image)
-            img.save(f"FIGURES/EXAMPLES_FEATURES/test_image_{feature}.png")   
-        
-    image = img_proc.tf_image(image, tf=tf)
+            img.save(f"FIGURES/EXAMPLES_FEATURES/test_image_{feature}.png")  
 
+    image = img_proc.tf_image(image, tf=tf)
+    image = img_proc.normalize_image(image) if rgb else image
+    
     return image
 
 
@@ -93,6 +94,51 @@ class Train_EF(Dataset):
         return len(self.imgsAnc)
     
 
+
+class Train_EF_multifeatures(Dataset):
+
+    def __init__(self, enc="vitl", features=["RGB", "GRAYSCALE", "MAGNITUDE", "ANGLE", "HUE"], env="atrium", il="daytime_360_0", tf=transforms.ToTensor()):
+        
+        self.enc, self.features, self.env, self.il, self.tf = enc, features, env, il, tf
+
+        CSV_file = pd.read_csv(f'{csvDir}/train_{self.env}_{self.il}.csv')
+        self.imgsAnc, self.imgsPos, self.imgsNeg = CSV_file['ImgAnc'], CSV_file['ImgPos'], CSV_file['ImgNeg']
+
+        self.color_rep = None
+    
+        self.rgb_dir = f"{dataset_dir}{self.env}/mapping/{self.il}/image_resized/"
+        self.depth_dir = self.rgb_dir.replace("image_resized", self.input_type)
+
+    def __getitem__(self, index):
+
+        imgAnc, imgPos, imgNeg = self.imgsAnc[index], self.imgsPos[index], self.imgsNeg[index]
+        
+        imgAnc_RGB, imgPos_RGB, imgNeg_RGB = f"{self.rgb_dir}{imgAnc}", f"{self.rgb_dir}{imgPos}", f"{self.rgb_dir}{imgNeg}"
+        
+        anc = process_image(image=imgAnc_RGB, rgb=True, eq=False, inv=False, sh=False, color_rep=False, tf=self.tf)
+        pos = process_image(image=imgPos_RGB, rgb=True, eq=False, inv=False, sh=False, color_rep=False, tf=self.tf)
+        neg = process_image(image=imgNeg_RGB, rgb=True, eq=False, inv=False, sh=False, color_rep=False, tf=self.tf)
+
+        for f in self.features:
+            if f != "RGB":
+                imgAnc_f = f"{self.rgb_dir.replace('image_resized', f) }{imgAnc}".replace(".jpg", ".npy")
+                imgPos_f = f"{self.rgb_dir.replace('image_resized', f) }{imgPos}".replace(".jpg", ".npy")
+                imgNeg_f = f"{self.rgb_dir.replace('image_resized', f) }{imgNeg}".replace(".jpg", ".npy")
+
+                anc_f = process_image(image=imgAnc_f, rgb=False, eq=PARAMS.eq, inv=PARAMS.inv, sh=PARAMS.sh, color_rep=self.color_rep, tf=self.tf)
+                pos_f = process_image(image=imgPos_f, rgb=False, eq=PARAMS.eq, inv=PARAMS.inv, sh=PARAMS.sh, color_rep=self.color_rep, tf=self.tf)
+                neg_f = process_image(image=imgNeg_f, rgb=False, eq=PARAMS.eq, inv=PARAMS.inv, sh=PARAMS.sh, color_rep=self.color_rep, tf=self.tf)
+
+                anc = torch.cat((anc, anc_f), dim=0)
+                pos = torch.cat((pos, pos_f), dim=0)
+                neg = torch.cat((neg, neg_f), dim=0)
+
+        return anc, pos, neg
+
+    def __len__(self):
+        return len(self.imgsAnc)
+    
+
 class Test_EF(Dataset):
 
     def __init__(self, enc="vitl",  ef_method="6_channels", input_type="MAGNITUDE", env="atrium", il="daytime1", tf=transforms.ToTensor()):
@@ -130,6 +176,78 @@ class Test_EF(Dataset):
 
 
 class Database_EF(Dataset):
+
+    def __init__(self, enc="vitl", ef_method="6_channels", input_type="MAGNITUDE", env="atrium", il="daytime_360_0", tf=transforms.ToTensor()):
+
+        self.enc, self.ef_method, self.input_type, self.env, self.il, self.tf = enc, ef_method, input_type, env, il, tf
+        self.color_rep = PARAMS.color_rep if self.ef_method in ["6_channels", "3_channels_RF_GF_BF"] else None
+
+        CSV_file = pd.read_csv(f'{csvDir}database_{env}_{self.il}.csv')
+        self.imgList, self.coordX, self.coordY = CSV_file['Img'], CSV_file['CoordX'], CSV_file['CoordY']
+
+        self.rgb_dir, self.depth_dir = f"{dataset_dir}{self.env}/mapping/{self.il}/image_resized/", f"{dataset_dir}{self.env}/mapping/{self.il}/{self.input_type}/"
+
+    def __getitem__(self, index):
+
+        imgPath, coords = self.imgList[index], img_proc.load_coords(self.coordX[index], self.coordY[index])
+        img_RGB, img_depth = f"{self.rgb_dir}{imgPath}", f"{self.depth_dir}{imgPath}".replace(".jpg", ".npy") 
+
+        img_RGB = process_image(image=img_RGB, rgb=True, eq=False, inv=False, sh=False, color_rep=False, tf=self.tf)   
+        img_depth = process_image(image=img_depth, rgb=False, eq=PARAMS.eq, inv=PARAMS.inv, sh=PARAMS.sh, color_rep=self.color_rep, tf=self.tf)
+
+        if "3" in self.ef_method:
+            if "RGF" in self.ef_method:
+                img = torch.cat((img_RGB[0].unsqueeze(0), img_RGB[1].unsqueeze(0), img_depth[0].unsqueeze(0)), dim=0)
+            elif "RG_BF" in self.ef_method:
+                img = torch.cat((img_RGB[0].unsqueeze(0), img_RGB[1].unsqueeze(0), ((img_RGB[2]+img_depth[0])/2).unsqueeze(0)), dim=0)
+            elif "RF_GF_BF" in self.ef_method:
+                img = torch.cat((((img_RGB[0]+img_depth[0])/2).unsqueeze(0), ((img_RGB[1]+img_depth[0])/2).unsqueeze(0), ((img_RGB[2]+img_depth[0])/2).unsqueeze(0)), dim=0)
+        else:
+            img = torch.cat((img_RGB, img_depth), dim=0)
+        return img, coords
+
+    def __len__(self):
+        return len(self.imgList)
+    
+
+
+class Test_EF_multifeatures(Dataset):
+
+    def __init__(self, enc="vitl",  ef_method="6_channels", input_type="MAGNITUDE", env="atrium", il="daytime1", tf=transforms.ToTensor()):
+
+        self.enc, self.ef_method, self.input_type, self.env, self.il, self.tf = enc, ef_method, input_type, env, il, tf
+        self.color_rep = PARAMS.color_rep if self.ef_method in ["6_channels", "3_channels_RF_GF_BF"] else None
+
+        CSV_file = pd.read_csv(f'{csvDir}/test_{env}_{self.il}.csv')
+        self.imgList, self.coordX, self.coordY = CSV_file['Img'], CSV_file['CoordX'], CSV_file['CoordY']
+
+        self.rgb_dir = f"{dataset_dir}{self.env}/query_360/{self.il}/image_resized/", f"{dataset_dir}{self.env}/query_360/{self.il}/{self.input_type}/"
+
+    def __getitem__(self, index):
+
+        imgPath, coords = self.imgList[index], img_proc.load_coords(self.coordX[index], self.coordY[index])
+        img_RGB, img_depth = f"{self.rgb_dir}{imgPath}", f"{self.depth_dir}{imgPath}".replace(".jpg", ".npy") 
+
+        img_RGB = process_image(image=img_RGB, rgb=True, eq=False, inv=False, sh=False, color_rep=False, tf=self.tf)   
+        img_depth = process_image(image=img_depth, rgb=False, eq=PARAMS.eq, inv=PARAMS.inv, sh=PARAMS.sh, color_rep=self.color_rep, tf=self.tf)
+
+        if "3" in self.ef_method:
+            if "RGF" in self.ef_method:
+                img = torch.cat((img_RGB[0].unsqueeze(0), img_RGB[1].unsqueeze(0), img_depth[0].unsqueeze(0)), dim=0)
+            elif "RG_BF" in self.ef_method:
+                img = torch.cat((img_RGB[0].unsqueeze(0), img_RGB[1].unsqueeze(0), ((img_RGB[2]+img_depth[0])/2).unsqueeze(0)), dim=0)
+            elif "RF_GF_BF" in self.ef_method:
+                img = torch.cat((((img_RGB[0]+img_depth[0])/2).unsqueeze(0), ((img_RGB[1]+img_depth[0])/2).unsqueeze(0), ((img_RGB[2]+img_depth[0])/2).unsqueeze(0)), dim=0)
+        else:
+            img = torch.cat((img_RGB, img_depth), dim=0)
+        return img, coords
+
+    def __len__(self):
+        return len(self.imgList)
+
+
+
+class Database_EF_multifeatures(Dataset):
 
     def __init__(self, enc="vitl", ef_method="6_channels", input_type="MAGNITUDE", env="atrium", il="daytime_360_0", tf=transforms.ToTensor()):
 
@@ -223,6 +341,7 @@ class Test_LF(Dataset):
         img_depth = img_depth.replace(".jpg", ".npy")
         img_depth = process_image(image=img_depth, rgb=False, eq=PARAMS.eq, inv=PARAMS.inv, sh=PARAMS.sh, color_rep=PARAMS.color_rep, tf=self.tf)
         img_depth = torch.cat((img_depth, img_depth, img_depth), dim=0) 
+        img_depth = img_proc.normalize_image(img_depth)
 
         return img_RGB, img_depth, coords
 
@@ -251,6 +370,7 @@ class Database_LF(Dataset):
         img_depth = img_depth.replace(".jpg", ".npy")
         img_depth = process_image(image=img_depth, rgb=False, eq=PARAMS.eq, inv=PARAMS.inv, sh=PARAMS.sh, color_rep=PARAMS.color_rep, tf=self.tf)
         img_depth = torch.cat((img_depth, img_depth, img_depth), dim=0) 
+        
         return img_RGB, img_depth, coords
 
     def __len__(self):
@@ -260,7 +380,7 @@ class Database_LF(Dataset):
 
 """LATE FUSION (MORE THAN ONE FEATURE)"""
 
-class Database_LF_multifeatures(Dataset):
+class Database_multifeatures(Dataset):
 
     def __init__(self, enc="vitl", features=["GRAYSCALE", "MAGNITUDE", "ANGLE", "HUE"], env="atrium", il="daytime_360_0", tf=transforms.ToTensor()):
 
@@ -291,7 +411,7 @@ class Database_LF_multifeatures(Dataset):
         return len(self.imgList)
     
 
-class Test_LF_multifeatures(Dataset):
+class Test_multifeatures(Dataset):
 
     def __init__(self, enc="vitl", features=["GRAYSCALE", "MAGNITUDE", "ANGLE", "HUE"], env="atrium", il="daytime_360_1", tf=transforms.ToTensor()):
 

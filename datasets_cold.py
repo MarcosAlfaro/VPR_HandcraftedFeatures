@@ -26,7 +26,9 @@ def process_image(image, rgb=True, eq=True, inv=True, sh=True, color_rep=None, t
         image = img_proc.inverse_image(image) if inv else image
         image = img_proc.sharpen_image(image) if sh else image
         image = img_proc.apply_colormap(image, color_rep) if color_rep is not None else image
+
     image = img_proc.tf_image(image, tf=tf)
+    #image = img_proc.normalize_image(image) if rgb else image
 
     return image
 
@@ -250,7 +252,51 @@ class Database_LF(Dataset):
 
 """LATE FUSION (MORE THAN ONE FEATURE)"""
 
-class Database_LF_multifeatures(Dataset):
+class Train_EF_multifeatures(Dataset):
+
+    def __init__(self, enc="vitl", features=None, env="FR_A", tf=transforms.ToTensor()):
+
+        self.enc, self.features, self.env, self.tf = enc, features, env, tf
+        self.color_rep = None
+
+        CSV_file = pd.read_csv(f'{csvDir}/Train_{env}.csv')
+        self.imgsAnc, self.imgsPos, self.imgsNeg = CSV_file['ImgAnc'], CSV_file['ImgPos'], CSV_file['ImgNeg']
+        self.rgb_dir, self.depth_dir = f"{rgb_dir}{self.env}/Train/", f"{features_dir}{self.input_type}/{self.env}/Train/"
+
+    def __getitem__(self, index):
+
+        imgAnc, imgPos, imgNeg = self.imgsAnc[index], self.imgsPos[index], self.imgsNeg[index]
+
+        imgAnc_RGB, imgPos_RGB, imgNeg_RGB = f"{self.rgb_dir}{imgAnc}", f"{self.rgb_dir}{imgPos}", f"{self.rgb_dir}{imgNeg}"
+
+        anc = process_image(image=imgAnc_RGB, rgb=True, eq=False, inv=False, sh=False, color_rep=False, tf=self.tf)
+        pos = process_image(image=imgPos_RGB, rgb=True, eq=False, inv=False, sh=False, color_rep=False, tf=self.tf)
+        neg = process_image(image=imgNeg_RGB, rgb=True, eq=False, inv=False, sh=False, color_rep=False, tf=self.tf)
+
+        for feature in self.features:
+            if feature == "RGB":
+                continue
+            imgAnc_f = features_dir + feature + "/" + self.env + "/Train/" + imgAnc
+            imgPos_f = features_dir + feature + "/" + self.env + "/Train/" + imgPos
+            imgNeg_f = features_dir + feature + "/" + self.env + "/Train/" + imgNeg
+            imgAnc_f = imgAnc_f.replace(".jpeg", ".npy")
+            imgPos_f = imgPos_f.replace(".jpeg", ".npy")
+            imgNeg_f = imgNeg_f.replace(".jpeg", ".npy")
+
+            anc_f = process_image(image=imgAnc_f, rgb=False, eq=PARAMS.eq, inv=PARAMS.inv, sh=PARAMS.sh, color_rep=PARAMS.color_rep, tf=self.tf)
+            pos_f = process_image(image=imgPos_f, rgb=False, eq=PARAMS.eq, inv=PARAMS.inv, sh=PARAMS.sh, color_rep=PARAMS.color_rep, tf=self.tf)
+            neg_f = process_image(image=imgNeg_f, rgb=False, eq=PARAMS.eq, inv=PARAMS.inv, sh=PARAMS.sh, color_rep=PARAMS.color_rep, tf=self.tf)
+
+            anc = torch.cat((anc, anc_f), dim=0)
+            pos = torch.cat((pos, pos_f), dim=0)
+            neg = torch.cat((neg, neg_f), dim=0)
+
+        return anc, pos, neg
+
+    def __len__(self):
+        return len(self.imgsAnc)
+
+class Database_multifeatures(Dataset):
 
     def __init__(self, enc="vitl", features=["GRAYSCALE", "MAGNITUDE", "ANGLE", "HUE"], env="FR_A", il="Cloudy", tf=transforms.ToTensor()):
 
@@ -280,7 +326,7 @@ class Database_LF_multifeatures(Dataset):
         return len(self.imgList)
     
 
-class Test_LF_multifeatures(Dataset):
+class Test_multifeatures(Dataset):
 
     def __init__(self, enc="vitl", features=["GRAYSCALE", "MAGNITUDE", "ANGLE", "HUE"], env="FR_A", il="Cloudy", tf=transforms.ToTensor()):
 

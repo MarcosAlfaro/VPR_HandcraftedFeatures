@@ -36,6 +36,11 @@ def equalize_image(image):
         raise ValueError("Unsupported image shape for equalization.")
     
 
+def normalize_image(image):
+    tf = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    image = tf(image)
+    return image
+
 def inverse_image(image):
     return 255 - np.array(image)
 
