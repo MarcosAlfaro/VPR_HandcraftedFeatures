@@ -1,0 +1,55 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# CSV files
+*.csv
+CSV/
+
+# PKL files
+*.pkl
+PKL_FILES/
+
+# Image files
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+*.tif
+*.svg
+*.ico
+*.webp
+FIGURES/
+
+# Virtual environment
+venv/
+env/
+ENV/
+.venv
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Model weights and large files
+*.pth
+*.pt
+*.ckpt
+*.weights
+*.h5
+
+# Logs
+*.log
+logs/

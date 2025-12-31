@@ -1,0 +1,49 @@
+device: "cuda:0"
+
+# CSV Creation Parameters
+directories:
+  cold_path: '/home/arvc/Marcos/INVESTIGACION/0_DATASETS/COLD/'
+  _360loc_path: '/home/arvc/Marcos/INVESTIGACION/0_DATASETS/360LOC/'
+  csv_path: 'CSV/'
+
+img_processing:
+  eq: True
+  inv: False
+  sh: False
+  color_rep: None 
+
+train:
+  train_length: 100000
+  train_env : "FR_A"
+  loss: "batch hard"
+  margin: 0.25
+  batch_size: 16
+  lr: 0.0001
+  num_validations: 10
+  pos_neg_thresholds:
+    r_pos: 0.4  
+    r_neg: 0.4  
+    r_pos_360loc: 1  
+    r_neg_360loc: 1
+    
+  
+model: 
+  model: "cosplace"
+  backbone: "VGG16"
+  embedding_size: 512
+  saved_models_path: '/media/arvc/PortableSSD/Marcos/SAVED_MODELS/VPR_HANDCRAFTED/'
+
+dav2:
+  enc: "vitl"
+
+mlp:
+  perceptron_architecture: [1024, 4096, 1024]
+  num_iterations_mlp: 1000
+
+pca:
+  values: [256]
+
+
+override: True
+
+
