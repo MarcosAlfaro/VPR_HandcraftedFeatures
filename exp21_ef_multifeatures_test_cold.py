@@ -16,9 +16,9 @@ csvDir = create_path(f"{PARAMS.csv_path}Results/")
 tf = select_tf(model=PARAMS.model)
 
 
-with open(csvDir + "/EXP02_EF_COLD.csv", 'w', newline='') as file:
+with open(csvDir + "/EXP02_EF_COLD.csv", 'a', newline='') as file:
     writer = csv.writer(file)
-    #writer.writerow(build_header_results_csv(["EF Method", "Features", "Train"]))
+    writer.writerow(build_header_results_csv(["EF Method", "Features", "Train"]))
 
     featuresList = [
         ["RGB", "GRAYSCALE"],
@@ -29,17 +29,17 @@ with open(csvDir + "/EXP02_EF_COLD.csv", 'w', newline='') as file:
         ["RGB", "GRAYSCALE", "MAGNITUDE", "ANGLE"],
         ["RGB", "GRAYSCALE", "MAGNITUDE", "ANGLE", "HUE"]
     ]
-    savedModelsDir = f"{PARAMS.saved_models_path}/EXP02_COLD/"
+    savedModelsDir = f"{PARAMS.saved_models_path}EXP02_COLD/"
 
     for features in featuresList:
 
         print(f"Early fusion, Features: {features}\n")
         state_dict_path = None
-        #state_dict_path = f"{savedModelsDir}{method}/net.pth"
+        state_dict_path = f"{savedModelsDir}{'_'.join(features)}/net.pth"
         net = load_model_ef(pretrained_model=PARAMS.model, num_channels=2+len(features), weightDir=state_dict_path).to(device)
         net.eval()
 
-        rowCSV = [features, "", "Yes"]
+        rowCSV = [f"{'_'.join(features)}", "", "Yes" if state_dict_path is not None else "No"]
         recall_at_1, recall_at_n = [], []
 
         with torch.no_grad():

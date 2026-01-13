@@ -30,16 +30,16 @@ with open(csvDir + "/EXP02_EF_360Loc.csv", 'a', newline='') as file:
         ["RGB", "GRAYSCALE", "MAGNITUDE", "ANGLE"],
         ["RGB", "GRAYSCALE", "MAGNITUDE", "ANGLE", "HUE"]
     ]
-    savedModelsDir = f"{PARAMS.saved_models_path}/EXP02_360Loc/"
+    savedModelsDir = f"{PARAMS.saved_models_path}EXP02_360LOC/"
 
     for features in featuresList:
         print(f"Early fusion, Features: {features}\n")
         state_dict_path = None
-        #state_dict_path = f"{savedModelsDir}{method}/net.pth"
+        state_dict_path = f"{savedModelsDir}{'_'.join(features)}/net.pth"
         net = load_model_ef(pretrained_model=PARAMS.model, num_channels=2+len(features), weightDir=state_dict_path).to(device)
         net.eval()
 
-        rowCSV = [features, "", "No"]
+        rowCSV = [features, "", "Yes" if state_dict_path is not None else "No"]
         recall_at_1, recall_at_n = [], []
 
         with torch.no_grad():

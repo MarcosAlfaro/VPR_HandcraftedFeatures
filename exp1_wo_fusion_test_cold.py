@@ -18,7 +18,7 @@ tf = select_tf(model=PARAMS.model)
 
 with open(csvDir + "EXP01_DepthPreprocessingCOLD.csv", 'a', newline='') as file:
     writer = csv.writer(file)
-    #writer.writerow(build_header_results_csv(["Model","Backbone", "Desc.size", "Trained", "Modality"]))
+    writer.writerow(build_header_results_csv(["Model","Backbone", "Desc.size", "Trained", "Modality"]))
 
     input_types = ["RGB", "GRAYSCALE", "HUE", "MAGNITUDE", "ANGLE"]
     
@@ -27,12 +27,12 @@ with open(csvDir + "EXP01_DepthPreprocessingCOLD.csv", 'a', newline='') as file:
 
         print(f"Image modality: {input_type}\n")
         state_dict_path = None
-        #state_dict_path = f"{PARAMS.saved_models_path}EXP03_COLD/{input_type}/net.pth"
+        state_dict_path = f"{PARAMS.saved_models_path}EXP03_COLD/{input_type}/net.pth"
         net = load_model(model=PARAMS.model, backbone=PARAMS.backbone, embedding_size=PARAMS.embedding_size, 
                          state_dict_path=state_dict_path, device=device)
         net.eval()
 
-        rowCSV = [PARAMS.model, PARAMS.backbone, PARAMS.embedding_size, "Yes" if state_dict_path is None else "Yes", input_type]
+        rowCSV = [PARAMS.model, PARAMS.backbone, PARAMS.embedding_size, "Yes" if state_dict_path is None else "No", input_type]
         recall_at_1, recall_at_n = [], []
 
         with torch.no_grad():

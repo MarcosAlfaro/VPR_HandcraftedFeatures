@@ -261,7 +261,7 @@ class Train_EF_multifeatures(Dataset):
 
         CSV_file = pd.read_csv(f'{csvDir}/Train_{env}.csv')
         self.imgsAnc, self.imgsPos, self.imgsNeg = CSV_file['ImgAnc'], CSV_file['ImgPos'], CSV_file['ImgNeg']
-        self.rgb_dir, self.depth_dir = f"{rgb_dir}{self.env}/Train/", f"{features_dir}{self.input_type}/{self.env}/Train/"
+        self.rgb_dir = f"{rgb_dir}{self.env}/Train/"
 
     def __getitem__(self, index):
 

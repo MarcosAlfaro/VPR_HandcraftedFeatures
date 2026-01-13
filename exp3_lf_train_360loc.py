@@ -29,7 +29,7 @@ with open(f"{csvDir}/EXP03_LF_360Loc.csv", 'w', newline='') as file:
     writer = csv.writer(file)
     writer.writerow(["Method", "Iteration", "R@1 Day1", "R@1 Day2", "R@1 Night1", "R@1 Night2", "R@1 Avg."])
 
-    input_types = ["RGB", "GRAYSCALE", "HUE", "MAGNITUDE", "ANGLE"]
+    input_types = ["RGB"]
     
     print("Training Late Fusion 360Loc database")
 

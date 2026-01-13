@@ -43,7 +43,7 @@ with open(f"{csvDir}/EF_360Loc.csv", 'w', newline='') as file:
     print("Training Early Fusion 360Loc database\n")
 
     for features in featuresList:
-        vmDataset = datasets_360loc.Database_EF_multifeatures(features=features, tf=tf, env="atrium", il="daytime_360_0")
+        vmDataset = datasets_360loc.Database_multifeatures(features=features, tf=tf, env="atrium", il="daytime_360_0")
         vmDataloader = DataLoader(vmDataset, shuffle=False, num_workers=0, batch_size=1)
 
         if featuresList.index(features) == 0:
@@ -57,12 +57,11 @@ with open(f"{csvDir}/EF_360Loc.csv", 'w', newline='') as file:
         if criterion == -1:
             sys.exit()
 
-        trainDataset = datasets_360loc.Train_EF_multifeatures(features=features, tf=tf, input_type=input_type)
+        trainDataset = datasets_360loc.Train_EF_multifeatures(features=features, tf=tf)
         trainDataloader = DataLoader(trainDataset, shuffle=False, num_workers=0, batch_size=PARAMS.batch_size)
 
         netDir = create_path(os.path.join(baseModelDir, "_".join(features)))
 
-        netDir = create_path(f"{baseModelDir}{features}/")
         net = load_model_ef(pretrained_model=PARAMS.model, num_channels=2+len(features), weightDir=None).to(device)
         net.aggregation.requires_grad_(False)
         net.backbone.requires_grad_(True)
@@ -79,7 +78,7 @@ with open(f"{csvDir}/EF_360Loc.csv", 'w', newline='') as file:
         testDataloaders = []
         condIlum = condIlum_360loc[0]
         for ilum in condIlum:
-            testDataset = datasets_360loc.Test_EF(il=ilum, env="atrium", ef_method=features, input_type=input_type, tf=tf)
+            testDataset = datasets_360loc.Test_multifeatures(il=ilum, env="atrium", features=features, tf=tf)
             testDataloader = DataLoader(testDataset, num_workers=0, batch_size=1, shuffle=False)
             testDataloaders.append(testDataloader)
 
@@ -108,10 +107,10 @@ with open(f"{csvDir}/EF_360Loc.csv", 'w', newline='') as file:
                     for ilum in condIlum:
                         idxIlum = condIlum.index(ilum)
 
-                        testDataset = datasets_360loc.Test_EF_multifeatures(il=ilum, env="atrium", features=features)
+                        testDataset = datasets_360loc.Test_multifeatures(il=ilum, env="atrium", features=features)
                         testDataloader = DataLoader(testDataset, num_workers=0, batch_size=1, shuffle=False)
 
-                        pkl_path = f"PKL_FILES/EF/{"_".join(features)}/atrium_{ilum}_val.pkl"
+                        pkl_path = f"PKL_FILES/EF/{'_'.join(features)}/atrium_{ilum}_val.pkl"
                         if not os.path.exists(pkl_path):
                             create_path(os.path.dirname(pkl_path))
                         get_predictions(pkl_path=pkl_path, model=net, testDataloader=testDataloaders[idxIlum], 

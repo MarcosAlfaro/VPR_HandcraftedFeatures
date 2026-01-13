@@ -107,7 +107,6 @@ class Train_EF_multifeatures(Dataset):
         self.color_rep = None
     
         self.rgb_dir = f"{dataset_dir}{self.env}/mapping/{self.il}/image_resized/"
-        self.depth_dir = self.rgb_dir.replace("image_resized", self.input_type)
 
     def __getitem__(self, index):
 
@@ -208,80 +207,6 @@ class Database_EF(Dataset):
 
     def __len__(self):
         return len(self.imgList)
-    
-
-
-class Test_EF_multifeatures(Dataset):
-
-    def __init__(self, enc="vitl",  ef_method="6_channels", input_type="MAGNITUDE", env="atrium", il="daytime1", tf=transforms.ToTensor()):
-
-        self.enc, self.ef_method, self.input_type, self.env, self.il, self.tf = enc, ef_method, input_type, env, il, tf
-        self.color_rep = PARAMS.color_rep if self.ef_method in ["6_channels", "3_channels_RF_GF_BF"] else None
-
-        CSV_file = pd.read_csv(f'{csvDir}/test_{env}_{self.il}.csv')
-        self.imgList, self.coordX, self.coordY = CSV_file['Img'], CSV_file['CoordX'], CSV_file['CoordY']
-
-        self.rgb_dir = f"{dataset_dir}{self.env}/query_360/{self.il}/image_resized/", f"{dataset_dir}{self.env}/query_360/{self.il}/{self.input_type}/"
-
-    def __getitem__(self, index):
-
-        imgPath, coords = self.imgList[index], img_proc.load_coords(self.coordX[index], self.coordY[index])
-        img_RGB, img_depth = f"{self.rgb_dir}{imgPath}", f"{self.depth_dir}{imgPath}".replace(".jpg", ".npy") 
-
-        img_RGB = process_image(image=img_RGB, rgb=True, eq=False, inv=False, sh=False, color_rep=False, tf=self.tf)   
-        img_depth = process_image(image=img_depth, rgb=False, eq=PARAMS.eq, inv=PARAMS.inv, sh=PARAMS.sh, color_rep=self.color_rep, tf=self.tf)
-
-        if "3" in self.ef_method:
-            if "RGF" in self.ef_method:
-                img = torch.cat((img_RGB[0].unsqueeze(0), img_RGB[1].unsqueeze(0), img_depth[0].unsqueeze(0)), dim=0)
-            elif "RG_BF" in self.ef_method:
-                img = torch.cat((img_RGB[0].unsqueeze(0), img_RGB[1].unsqueeze(0), ((img_RGB[2]+img_depth[0])/2).unsqueeze(0)), dim=0)
-            elif "RF_GF_BF" in self.ef_method:
-                img = torch.cat((((img_RGB[0]+img_depth[0])/2).unsqueeze(0), ((img_RGB[1]+img_depth[0])/2).unsqueeze(0), ((img_RGB[2]+img_depth[0])/2).unsqueeze(0)), dim=0)
-        else:
-            img = torch.cat((img_RGB, img_depth), dim=0)
-        return img, coords
-
-    def __len__(self):
-        return len(self.imgList)
-
-
-
-class Database_EF_multifeatures(Dataset):
-
-    def __init__(self, enc="vitl", ef_method="6_channels", input_type="MAGNITUDE", env="atrium", il="daytime_360_0", tf=transforms.ToTensor()):
-
-        self.enc, self.ef_method, self.input_type, self.env, self.il, self.tf = enc, ef_method, input_type, env, il, tf
-        self.color_rep = PARAMS.color_rep if self.ef_method in ["6_channels", "3_channels_RF_GF_BF"] else None
-
-        CSV_file = pd.read_csv(f'{csvDir}database_{env}_{self.il}.csv')
-        self.imgList, self.coordX, self.coordY = CSV_file['Img'], CSV_file['CoordX'], CSV_file['CoordY']
-
-        self.rgb_dir, self.depth_dir = f"{dataset_dir}{self.env}/mapping/{self.il}/image_resized/", f"{dataset_dir}{self.env}/mapping/{self.il}/{self.input_type}/"
-
-    def __getitem__(self, index):
-
-        imgPath, coords = self.imgList[index], img_proc.load_coords(self.coordX[index], self.coordY[index])
-        img_RGB, img_depth = f"{self.rgb_dir}{imgPath}", f"{self.depth_dir}{imgPath}".replace(".jpg", ".npy") 
-
-        img_RGB = process_image(image=img_RGB, rgb=True, eq=False, inv=False, sh=False, color_rep=False, tf=self.tf)   
-        img_depth = process_image(image=img_depth, rgb=False, eq=PARAMS.eq, inv=PARAMS.inv, sh=PARAMS.sh, color_rep=self.color_rep, tf=self.tf)
-
-        if "3" in self.ef_method:
-            if "RGF" in self.ef_method:
-                img = torch.cat((img_RGB[0].unsqueeze(0), img_RGB[1].unsqueeze(0), img_depth[0].unsqueeze(0)), dim=0)
-            elif "RG_BF" in self.ef_method:
-                img = torch.cat((img_RGB[0].unsqueeze(0), img_RGB[1].unsqueeze(0), ((img_RGB[2]+img_depth[0])/2).unsqueeze(0)), dim=0)
-            elif "RF_GF_BF" in self.ef_method:
-                img = torch.cat((((img_RGB[0]+img_depth[0])/2).unsqueeze(0), ((img_RGB[1]+img_depth[0])/2).unsqueeze(0), ((img_RGB[2]+img_depth[0])/2).unsqueeze(0)), dim=0)
-        else:
-            img = torch.cat((img_RGB, img_depth), dim=0)
-        return img, coords
-
-    def __len__(self):
-        return len(self.imgList)
-
-
 
 
 

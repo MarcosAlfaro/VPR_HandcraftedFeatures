@@ -18,22 +18,22 @@ tf = select_tf(model=PARAMS.model)
 
 with open(csvDir + "EXP03_LF_COLD.csv", 'a', newline='') as file:
     writer = csv.writer(file)
-    #writer.writerow(build_header_results_csv(["Preprocess Method", "LF Method"]))
+    #writer.writerow(build_header_results_csv(["Preprocess Method", "LF Method", "Trained"]))
 
-    features = ["RGB", "GRAYSCALE", "MAGNITUDE"]
+    features = ["RGB", "HUE"]
     lf = "concat"
-    savedModelsDir = f"{PARAMS.saved_models_path}/EXP03_COLD/"
+    savedModelsDir = f"{PARAMS.saved_models_path}EXP03_COLD/"
 
     models = []
     for feature in features:
         state_dict_path = None
-        #state_dict_path = f"{savedModelsDir}{feature}/net.pth"
+        state_dict_path = f"{savedModelsDir}{feature}/net.pth"
         net_feature = load_model(model=PARAMS.model, backbone=PARAMS.backbone, embedding_size=PARAMS.embedding_size, 
                                  state_dict_path=state_dict_path, device=device)
         net_feature.eval()
         models.append(net_feature)
     
-    rowCSV = [features, lf]
+    rowCSV = ['_'.join(features), lf, "Yes" if state_dict_path is not None else "No"]
     recall_at_1, recall_at_n = [], []
 
     with torch.no_grad():

@@ -18,23 +18,22 @@ tf = select_tf(model=PARAMS.model)
 
 with open(csvDir + "EXP03_LF_360Loc.csv", 'a', newline='') as file:
     writer = csv.writer(file)
-    #writer.writerow(build_header_results_csv(["Preprocess Method", "LF Method"]))
+    #writer.writerow(build_header_results_csv(["Preprocess Method", "LF Method", "Trained"]))
 
-    features = ["RGB", "GRAYSCALE", "MAGNITUDE", "ANGLE", "HUE"]
+    features = ["RGB", "HUE"]
     lf = "concat"
     savedModelsDir = f"{PARAMS.saved_models_path}/EXP03_360Loc/"
 
     models = []
     for feature in features:
         state_dict_path = None
-        #state_dict_path = f"{savedModelsDir}{feature}/net.pth"
+        state_dict_path = f"{savedModelsDir}{feature}/net.pth"
         net_feature = load_model(model=PARAMS.model, backbone=PARAMS.backbone, embedding_size=PARAMS.embedding_size, 
                                  state_dict_path=state_dict_path, device=device)
         net_feature.eval()
         models.append(net_feature)
 
-    
-    rowCSV = [features, lf]
+    rowCSV = ['_'.join(features), lf, "Yes" if state_dict_path is not None else "No"]
     recall_at_1, recall_at_n = [], []
 
     with torch.no_grad():
@@ -58,7 +57,7 @@ with open(csvDir + "EXP03_LF_360Loc.csv", 'a', newline='') as file:
                 testDataset = datasets_360loc.Test_multifeatures(il=ilum, env=env, features=features, enc="vitl", tf=tf)
                 testDataloader = DataLoader(testDataset, num_workers=0, batch_size=1, shuffle=False)
                 
-                pkl_path = f"PKL_FILES/LF_Multifeatures/{"_".join(features)}_{lf}/{env}_{ilum}.pkl"
+                pkl_path = f"PKL_FILES/LF_Multifeatures/{'_'.join(features)}_{lf}/{env}_{ilum}.pkl"
                 if not os.path.exists(pkl_path) or PARAMS.override == True:
                     create_path(os.path.dirname(pkl_path))
                     get_predictions(pkl_path=pkl_path, model=models, testDataloader=testDataloader, 
@@ -80,5 +79,5 @@ with open(csvDir + "EXP03_LF_360Loc.csv", 'a', newline='') as file:
         recall_at_1.append(glob_r1)
         recall_at_n.append(glob_rn)
     rowCSV = build_row_results_csv(rowCSV, recall_at_1, recall_at_n)
-    writer.writerow(rowCSV)
+    #writer.writerow(rowCSV)
 
