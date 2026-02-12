@@ -17,9 +17,9 @@ csvDir = create_path(f"{PARAMS.csv_path}Results/")
 tf = select_tf(model=PARAMS.model)
 
 
-with open(csvDir + "/EXP02_EF_360Loc.csv", 'a', newline='') as file:
+with open(csvDir + "/EXP02_EF_360Loc_prueba.csv", 'w', newline='') as file:
     writer = csv.writer(file)
-    #writer.writerow(build_header_results_csv(["EF Method", "Features", "Train"]))
+    writer.writerow(build_header_results_csv(["EF Method", "Features", "Train"]))
 
     featuresList = [
         ["RGB", "GRAYSCALE"],
@@ -30,7 +30,8 @@ with open(csvDir + "/EXP02_EF_360Loc.csv", 'a', newline='') as file:
         ["RGB", "GRAYSCALE", "MAGNITUDE", "ANGLE"],
         ["RGB", "GRAYSCALE", "MAGNITUDE", "ANGLE", "HUE"]
     ]
-    savedModelsDir = f"{PARAMS.saved_models_path}EXP02_360LOC/"
+    # featuresList = [["RGB", "MAGNITUDE"]]
+    savedModelsDir = f"{PARAMS.saved_models_path}EXP02_360LOC_prueba/"
 
     for features in featuresList:
         print(f"Early fusion, Features: {features}\n")

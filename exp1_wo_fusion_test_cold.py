@@ -21,7 +21,7 @@ with open(csvDir + "EXP01_DepthPreprocessingCOLD.csv", 'a', newline='') as file:
     writer.writerow(build_header_results_csv(["Model","Backbone", "Desc.size", "Trained", "Modality"]))
 
     input_types = ["RGB", "GRAYSCALE", "HUE", "MAGNITUDE", "ANGLE"]
-    
+    input_types = ["RGB"]
 
     for input_type in input_types:
 

@@ -2,8 +2,9 @@ device: "cuda:0"
 
 # CSV Creation Parameters
 directories:
-  cold_path: '/home/arvc/Marcos/INVESTIGACION/0_DATASETS/COLD/'
-  _360loc_path: '/home/arvc/Marcos/INVESTIGACION/0_DATASETS/360LOC/'
+  cold_path: '/media/arvc/PortableSSD/Marcos/DATASETS/COLD/'
+  _360loc_path: '/media/arvc/PortableSSD/Marcos/DATASETS/360LOC/'
+  rawseeds_path: '/home/arvc/Marcos/Datasets/rawseeds/'
   csv_path: 'CSV/'
 
 img_processing:

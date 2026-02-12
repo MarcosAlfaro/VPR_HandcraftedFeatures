@@ -55,7 +55,7 @@ with open(f"{csvDir}/EXP03_LF_360Loc.csv", 'w', newline='') as file:
         netDir = create_path(f"{baseModelDir}{input_type}/")
         net = load_model(model=PARAMS.model, backbone=PARAMS.backbone, embedding_size=PARAMS.embedding_size, 
                          state_dict_path=None, device=device)
-        net.aggregation.requires_grad_(False)
+        net.aggregation.requires_grad_(True)
         net.backbone.requires_grad_(True)
 
         # Mantener semillas fijas
@@ -117,7 +117,7 @@ with open(f"{csvDir}/EXP03_LF_360Loc.csv", 'w', newline='') as file:
                         torch.save(net.state_dict(), netName)
                         print("Modelo guardado")
                         writer.writerow([input_type, str(i + 1), recall_at_1[0], recall_at_1[1], recall_at_1[2], avg_recall_at_1])
-
+                net.aggregation.requires_grad_(True)
                 net.backbone.requires_grad_(True)
 
         print(f"Training finished, Best Recall: {bestRecall}")

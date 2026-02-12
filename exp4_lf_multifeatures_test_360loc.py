@@ -20,14 +20,14 @@ with open(csvDir + "EXP03_LF_360Loc.csv", 'a', newline='') as file:
     writer = csv.writer(file)
     #writer.writerow(build_header_results_csv(["Preprocess Method", "LF Method", "Trained"]))
 
-    features = ["RGB", "HUE"]
+    features = ["RGB", "GRAYSCALE", "MAGNITUDE", "ANGLE", "HUE"]
     lf = "concat"
     savedModelsDir = f"{PARAMS.saved_models_path}/EXP03_360Loc/"
 
     models = []
     for feature in features:
         state_dict_path = None
-        state_dict_path = f"{savedModelsDir}{feature}/net.pth"
+        #state_dict_path = f"{savedModelsDir}{feature}/net.pth"
         net_feature = load_model(model=PARAMS.model, backbone=PARAMS.backbone, embedding_size=PARAMS.embedding_size, 
                                  state_dict_path=state_dict_path, device=device)
         net_feature.eval()

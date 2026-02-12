@@ -28,19 +28,36 @@
 #   exit 1
 # fi
 
-python3 exp3_lf_train_cold.py
+python3 exp21_ef_multifeatures_train_cold.py
 
 # Verificar si el primer script se ejecutó correctamente
 if [ $? -ne 0 ]; then
-  echo "Error al ejecutar exp3_lf_train_cold.py"
+  echo "Error al ejecutar exp21_ef_multifeatures_train_cold.py"
   exit 1
 fi
 
-python3 exp3_lf_train_360loc.py
+python3 exp21_ef_multifeatures_train_360loc.py
 
 # Verificar si el primer script se ejecutó correctamente
 if [ $? -ne 0 ]; then
-  echo "Error al ejecutar exp3_lf_train_360loc.py"
+  echo "Error al ejecutar exp21_ef_multifeatures_train_360loc.py"
+  exit 1
+fi
+
+
+python3 exp21_ef_multifeatures_test_cold.py
+
+# Verificar si el primer script se ejecutó correctamente
+if [ $? -ne 0 ]; then
+  echo "Error al ejecutar exp21_ef_multifeatures_test_cold.py"
+  exit 1
+fi
+
+python3 exp21_ef_multifeatures_test_360loc.py
+
+# Verificar si el primer script se ejecutó correctamente
+if [ $? -ne 0 ]; then
+  echo "Error al ejecutar exp21_ef_multifeatures_test_360loc.py"
   exit 1
 fi
 

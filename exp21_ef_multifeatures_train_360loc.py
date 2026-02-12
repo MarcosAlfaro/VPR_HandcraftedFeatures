@@ -20,7 +20,7 @@ from config import PARAMS
 device = select_device()
 csvDir = create_path(f"{PARAMS.csv_path}Train/")
 tf = select_tf(model=PARAMS.model)
-baseModelDir = create_path(f"{PARAMS.saved_models_path}EXP02_360LOC/")
+baseModelDir = create_path(f"{PARAMS.saved_models_path}EXP02_360LOC_prueba/")
 input_type = "MAGNITUDE"
 
 
@@ -39,6 +39,8 @@ with open(f"{csvDir}/EF_360Loc.csv", 'w', newline='') as file:
         ["RGB", "GRAYSCALE", "MAGNITUDE", "ANGLE"],
         ["RGB", "GRAYSCALE", "MAGNITUDE", "ANGLE", "HUE"]
     ]
+
+    # featuresList = [["RGB", "GRAYSCALE", "MAGNITUDE"]]
 
     print("Training Early Fusion 360Loc database\n")
 
@@ -63,8 +65,9 @@ with open(f"{csvDir}/EF_360Loc.csv", 'w', newline='') as file:
         netDir = create_path(os.path.join(baseModelDir, "_".join(features)))
 
         net = load_model_ef(pretrained_model=PARAMS.model, num_channels=2+len(features), weightDir=None).to(device)
-        net.aggregation.requires_grad_(False)
-        net.backbone.requires_grad_(True)
+        # net.aggregation.requires_grad_(False)
+        # net.backbone.requires_grad_(True)
+        net.train(True)
 
         # Mantener semillas fijas
         make_deterministic(42)
@@ -131,7 +134,8 @@ with open(f"{csvDir}/EF_360Loc.csv", 'w', newline='') as file:
                         print("Modelo guardado")
                         writer.writerow(["_".join(features), str(i + 1), recall_at_1[0], recall_at_1[1], recall_at_1[2], avg_recall_at_1])
 
-                net.backbone.requires_grad_(True)
+                #net.backbone.requires_grad_(True)
+                net.train(True)
 
         print(f"Training finished, Best Recall: {bestRecall}")
         net.eval()

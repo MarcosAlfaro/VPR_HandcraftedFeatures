@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from functions.eval_functions import get_distance_threshold
 from config import PARAMS
 #from utils.functions import get_img_path_from_index
+import time
 
 
 
@@ -53,6 +54,7 @@ def build_vm_lf_multifeatures(models, features, dataloader, device="cuda"):
         for i, vmData in enumerate(dataloader, 0):
             img, imgCoords = vmData[0].float().to(device), vmData[1].detach().numpy()[0]
             img_RGB = img[:,0:3,:,:]
+            start_time = time.time()
             for f in range(len(features)):
                 if features[f] == "RGB":
                     out_f = models[0](img_RGB)
@@ -61,6 +63,8 @@ def build_vm_lf_multifeatures(models, features, dataloader, device="cuda"):
                     img_f = torch.cat((img_f, img_f, img_f), dim=1)
                     out_f = models[f](img_f) if len(models) > 1 else models[0](img_f)
                 descVM[f, i] = out_f + descVM[f, i]
+            end_time = time.time()
+            print(f"Processed image {i} in {end_time - start_time:.4f} seconds")
             coordsVM.append(imgCoords)
 
     treeCoordsVM = KDTree(coordsVM, leaf_size=2)

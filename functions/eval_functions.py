@@ -6,8 +6,10 @@ def get_distance_threshold(env):
         d_threshold = 0.5
     elif env in ["atrium", "hall", "piatrium"]:
         d_threshold = 10
-    else:
+    elif env == "concourse":
         d_threshold = 5
+    else:
+        d_threshold = 1
     return d_threshold
 
 

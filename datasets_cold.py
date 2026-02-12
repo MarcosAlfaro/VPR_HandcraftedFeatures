@@ -28,7 +28,7 @@ def process_image(image, rgb=True, eq=True, inv=True, sh=True, color_rep=None, t
         image = img_proc.apply_colormap(image, color_rep) if color_rep is not None else image
 
     image = img_proc.tf_image(image, tf=tf)
-    #image = img_proc.normalize_image(image) if rgb else image
+    image = img_proc.normalize_image(image) if rgb else image
 
     return image
 

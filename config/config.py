@@ -26,6 +26,7 @@ class Config():
             # CSV creation parameters
             self.csv_path = config.get('directories').get('csv_path')
             self.cold_path = config.get('directories').get('cold_path')
+            self.rawseeds_path = config.get('directories').get('rawseeds_path')
             self._360loc_path = config.get('directories').get('_360loc_path')
             self.train_length = config.get('train').get('train_length')
             self.num_validations = config.get('train').get('num_validations')
