@@ -14,17 +14,9 @@ CSV/
 PKL_FILES/
 
 # Image files
-*.jpg
-*.jpeg
-*.png
-*.gif
-*.bmp
-*.tiff
-*.tif
-*.svg
-*.ico
-*.webp
+tsne_plots/
 FIGURES/
+samples/
 
 # Virtual environment
 venv/
